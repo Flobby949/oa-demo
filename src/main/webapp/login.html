@@ -88,7 +88,6 @@
                                 this.$message.success({message: res.data.message})
                                 let user = res.data.data.user;
                                 localStorage.setItem("uid", user.userId.toString())
-                                localStorage.setItem("username", user.username)
                                 localStorage.setItem("eid", user.employeeId.toString())
                                 window.location.href = "index.html"
                             } else {

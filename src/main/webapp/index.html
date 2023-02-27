@@ -2,9 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>OA系统</title>
+    <!-- Import style -->
+    <link rel="stylesheet" href="//unpkg.com/element-plus/dist/index.css"/>
+    <!-- Import Vue 3 -->
+    <script src="//unpkg.com/vue@3"></script>
+    <!-- Import component library -->
+    <script src="//unpkg.com/element-plus"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 </head>
 <body>
-<h1>hello</h1>
+<div id="app">
+    <div>{{ employee.name }} : [ {{ employee.title }} ]</div>
+    <img :src="employee.avatar" width="200">
+    <br>
+    <el-button type="warning" plain v-on:click="logout()">退出登录</el-button>
+</div>
+
+<script>
+    const main = {
+        data() {
+            return {
+                employee: {
+                    name: '',
+                    title: '',
+                    avatar: ''
+                }
+            }
+        },
+        mounted() {
+            let eid = localStorage.getItem("eid");
+            axios.get(`/api/userInfo/${eid}`).then((res) => {
+                let data = res.data
+                if (data.code === "0") {
+                    this.employee.name = data.data.employee.name
+                    this.employee.title = data.data.employee.title
+                    this.employee.avatar = data.data.employee.avatar
+                } else {
+                    this.$message.error({
+                        message: data.message
+                    })
+                }
+            })
+        },
+        methods: {
+            logout() {
+                localStorage.clear()
+                window.location.href = "/login.html"
+            }
+        }
+    }
+
+    const app = Vue.createApp(main)
+    app.use(ElementPlus);
+    app.mount("#app")
+
+</script>
 </body>
 </html>
