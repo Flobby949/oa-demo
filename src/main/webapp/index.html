@@ -10,13 +10,86 @@
     <!-- Import component library -->
     <script src="//unpkg.com/element-plus"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="//unpkg.com/@element-plus/icons-vue"></script>
+    <style>
+        body,
+        #app,
+        .el-container {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            max-height: 100%;
+        }
+
+        .el-header {
+            background-color: cornflowerblue;
+            color: #fff;
+        }
+
+        #main {
+            width: 100%;
+            height: 95%;
+            border: 0;
+        }
+
+    </style>
 </head>
 <body>
 <div id="app">
-    <div>{{ employee.name }} : [ {{ employee.title }} ]</div>
-    <img :src="employee.avatar" width="200">
-    <br>
-    <el-button type="warning" plain v-on:click="logout()">退出登录</el-button>
+    <el-container>
+        <el-header>
+            <el-row>
+                <el-col :span="4">OA系统</el-col>
+                <el-col :span="14"></el-col>
+                <el-col :span="6">
+                    <el-dropdown>
+                        <div class="el-header">
+                            {{employee.name}}/{{employee.title}}
+                            <el-avatar :src="employee.avatar"></el-avatar>
+                        </div>
+                        <template #dropdown>
+                            <el-button type="warning" v-on:click="logout()">注销</el-button>
+                        </template>
+                    </el-dropdown>
+                </el-col>
+            </el-row>
+        </el-header>
+        <el-container>
+            <el-aside width="200px">
+                <el-menu default-active="1">
+                    <template v-for="(n, idx) in menuList" :key="idx">
+
+                        <el-sub-menu v-if="n.children.length != 0" :index="idx.toString()">
+                            <template #title>
+                                <el-icon>
+                                    <component :is="n.node.icon"></component>
+                                </el-icon>
+                                <span>{{n.node.nodeName}}</span>
+                            </template>
+                            <el-menu-item v-for="(child, cid) in n.children"
+                                          :index="child.nodeId.toString()"
+                                          v-on:click="show(child)">
+                                <el-icon>
+                                    <component :is="child.icon"></component>
+                                </el-icon>
+                                {{child.nodeName}}
+                            </el-menu-item>
+                        </el-sub-menu>
+
+                        <el-menu-item v-else v-on:click="show(n.node)">
+                            <el-icon>
+                                <component :is="n.node.icon"></component>
+                            </el-icon>
+                            <span>{{n.node.nodeName}}</span>
+                        </el-menu-item>
+                    </template>
+                </el-menu>
+            </el-aside>
+            <el-main>
+                <iframe id="main" src="/dashboard.html"></iframe>
+            </el-main>
+        </el-container>
+    </el-container>
 </div>
 
 <script>
@@ -27,17 +100,20 @@
                     name: '',
                     title: '',
                     avatar: ''
-                }
+                },
+                menuList: []
             }
         },
         mounted() {
+            let uid = localStorage.getItem("uid");
             let eid = localStorage.getItem("eid");
-            axios.get(`/api/userInfo/${eid}`).then((res) => {
+            axios.get(`/api/index?uid=${uid}&eid=${eid}`).then((res) => {
                 let data = res.data
+                console.log(data)
                 if (data.code === "0") {
-                    this.employee.name = data.data.employee.name
-                    this.employee.title = data.data.employee.title
-                    this.employee.avatar = data.data.employee.avatar
+                    this.employee = data.data.employee
+                    this.menuList = data.data.nodeList
+                    console.log(this.menuList)
                 } else {
                     this.$message.error({
                         message: data.message
@@ -49,11 +125,18 @@
             logout() {
                 localStorage.clear()
                 window.location.href = "/login.html"
+            },
+            show(node) {
+                console.log(node)
+                document.getElementById("main").src = node.url
             }
         }
     }
 
     const app = Vue.createApp(main)
+    for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+        app.component(key, component)
+    }
     app.use(ElementPlus);
     app.mount("#app")
 
