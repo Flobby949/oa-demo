@@ -18,4 +18,12 @@ public interface EmployeeService {
      * @return {@link Employee}
      */
     Employee getInfo(Long id);
+
+    /**
+     * 得到领导
+     *
+     * @param id id
+     * @return {@link Employee}
+     */
+    Employee getLeader(Long id);
 }

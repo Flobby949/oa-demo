@@ -7,4 +7,16 @@
         FROM adm_employee
         WHERE employee_id = #{value}
     </select>
+
+    <select id="getEmployeeBoss" parameterType="java.util.Map" resultType="top.flobby.oa.entity.Employee">
+        SELECT *
+        FROM adm_employee
+        WHERE 1 = 1
+        <if test="level != null">
+            AND level = #{level}
+        </if>
+        <if test="departmentId != null">
+            AND department_id = #{departmentId}
+        </if>
+    </select>
 </mapper>

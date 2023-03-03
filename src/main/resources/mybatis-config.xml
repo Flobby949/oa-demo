@@ -26,6 +26,9 @@
         <mapper resource="mapper/UserMapper.xml" />
         <mapper resource="mapper/EmployeeMapper.xml" />
         <mapper resource="mapper/NodeMapper.xml" />
+        <mapper resource="mapper/LeaveFormMapper.xml" />
+        <mapper resource="mapper/ProcessFlowMapper.xml" />
+        <mapper resource="mapper/DepartmentMapper.xml" />
     </mappers>
     
 </configuration>

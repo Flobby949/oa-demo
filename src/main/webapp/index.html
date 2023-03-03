@@ -56,7 +56,7 @@
         </el-header>
         <el-container>
             <el-aside width="200px">
-                <el-menu default-active="1">
+                <el-menu>
                     <template v-for="(n, idx) in menuList" :key="idx">
 
                         <el-sub-menu v-if="n.children.length != 0" :index="idx.toString()">
@@ -67,7 +67,7 @@
                                 <span>{{n.node.nodeName}}</span>
                             </template>
                             <el-menu-item v-for="(child, cid) in n.children"
-                                          :index="child.nodeId.toString()"
+                                          :index="child.nodeName"
                                           v-on:click="show(child)">
                                 <el-icon>
                                     <component :is="child.icon"></component>
