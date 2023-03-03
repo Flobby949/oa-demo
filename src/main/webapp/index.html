@@ -12,12 +12,13 @@
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="//unpkg.com/@element-plus/icons-vue"></script>
     <style>
+        html,
         body,
         #app,
         .el-container {
             margin: 0;
             padding: 0;
-            width: 100%;
+            height: 100%;
             max-height: 100%;
         }
 
@@ -55,7 +56,7 @@
             </el-row>
         </el-header>
         <el-container>
-            <el-aside width="200px">
+            <el-aside width="200px" style="max-height: 100%">
                 <el-menu>
                     <template v-for="(n, idx) in menuList" :key="idx">
 
@@ -109,11 +110,11 @@
             let eid = localStorage.getItem("eid");
             axios.get(`/api/index?uid=${uid}&eid=${eid}`).then((res) => {
                 let data = res.data
-                console.log(data)
                 if (data.code === "0") {
                     this.employee = data.data.employee
                     this.menuList = data.data.nodeList
-                    console.log(this.menuList)
+                    localStorage.setItem("employee", JSON.stringify(data.data.employee))
+                    localStorage.setItem("department", JSON.stringify(data.data.department))
                 } else {
                     this.$message.error({
                         message: data.message
