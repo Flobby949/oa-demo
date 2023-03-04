@@ -19,6 +19,10 @@
           <element id="library" level="project" name="Maven: org.mybatis:mybatis:3.5.6" />
           <element id="library" level="project" name="Maven: org.projectlombok:lombok:1.18.26" />
           <element id="library" level="project" name="Maven: org.slf4j:slf4j-api:1.7.32" />
+          <element id="library" level="project" name="Maven: org.mybatis:mybatis:3.5.0" />
+          <element id="library" level="project" name="Maven: org.mybatis:mybatis-typehandlers-jsr310:1.0.2" />
+          <element id="library" level="project" name="Maven: com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.2" />
+          <element id="library" level="project" name="Maven: com.alibaba:druid:1.1.21" />
         </element>
       </element>
       <element id="javaee-facet-resources" facet="oa/web/Web" />

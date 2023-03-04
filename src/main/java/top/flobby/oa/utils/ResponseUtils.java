@@ -2,6 +2,7 @@ package top.flobby.oa.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Data;
 
 import java.util.LinkedHashMap;
@@ -45,6 +46,7 @@ public class ResponseUtils {
 
     public String toJsonString() {
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         String json;
         try {
             json = objectMapper.writeValueAsString(this);

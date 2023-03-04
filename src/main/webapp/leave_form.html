@@ -120,7 +120,18 @@
                 params.append("endTime", this.form.endTime)
                 params.append("reason", this.form.reason)
                 axios.post("/api/leave/create", params).then((res) => {
-                    console.log(res)
+                    let data = res.data
+                    if (data.code === "0") {
+                        this.$alert("请假已申请结束", {
+                            callback: function () {
+                                window.location.href  = "/notice.html"
+                            }
+                        })
+                    } else  {
+                        this.$message.error({
+                            message: data.message
+                        })
+                    }
                 })
             }
         },

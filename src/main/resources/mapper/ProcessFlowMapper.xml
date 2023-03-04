@@ -9,4 +9,19 @@
         VALUES (#{formId}, #{operatorId}, #{action}, #{result}, #{reason}, #{createTime}, #{auditTime}, #{orderNo},
                 #{state}, #{isLast})
     </insert>
+    <update id="update" parameterType="top.flobby.oa.entity.ProcessFlow">
+        UPDATE adm_process_flow
+        SET `form_id`     = #{formId},
+            `result`      = #{result},
+            `reason`      = #{reason},
+            `create_time` = #{createTime},
+            `audit_time`  = #{auditTime},
+            `state`       = #{state}
+        WHERE `process_id` = #{processId};
+    </update>
+    <select id="selectByFormId" parameterType="long" resultType="top.flobby.oa.entity.ProcessFlow">
+        SELECT *
+        FROM adm_process_flow
+        WHERE form_id = #{value}
+    </select>
 </mapper>

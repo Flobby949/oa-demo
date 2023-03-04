@@ -29,6 +29,7 @@
         <mapper resource="mapper/LeaveFormMapper.xml" />
         <mapper resource="mapper/ProcessFlowMapper.xml" />
         <mapper resource="mapper/DepartmentMapper.xml" />
+        <mapper resource="mapper/NoticeMapper.xml" />
     </mappers>
     
 </configuration>

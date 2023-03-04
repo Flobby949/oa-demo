@@ -6,6 +6,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import top.flobby.oa.entity.LeaveForm;
 import top.flobby.oa.service.LeaveFormService;
 import top.flobby.oa.service.exception.LeaveFormException;
@@ -16,6 +17,10 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+
+import static top.flobby.oa.common.Constant.STATE_PROCESS;
 
 /**
  * @author : Flobby
@@ -24,6 +29,7 @@ import java.time.ZoneOffset;
  * @create : 2023-03-03 13:46
  **/
 
+@Slf4j
 @WebServlet("/api/leave/*")
 public class LeaveServlet extends HttpServlet {
     private LeaveFormService leaveFormService;
@@ -33,14 +39,20 @@ public class LeaveServlet extends HttpServlet {
     }
 
     @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        this.doPost(req, resp);
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("application/json;charset=utf-8");
         String requestURI = request.getRequestURI();
         String uri = requestURI.substring(requestURI.lastIndexOf("/") + 1);
         switch (uri) {
             case "create" -> createLeave(request, response);
             case "list" -> leaveList(request, response);
             case "audit" -> auditLeave(request, response);
-            default -> System.out.println("请求错误");
+            default -> response.getWriter().write("请求失败");
         }
     }
 
@@ -52,7 +64,6 @@ public class LeaveServlet extends HttpServlet {
         String reason = request.getParameter("reason");
 
         ResponseUtils responseUtils;
-        response.setContentType("application/json;charset=utf-8");
 
         LeaveForm leaveForm = LeaveForm.builder()
                 .employeeId(Long.parseLong(eid))
@@ -70,11 +81,33 @@ public class LeaveServlet extends HttpServlet {
         response.getWriter().write(responseUtils.toJsonString());
     }
 
-    public void leaveList(HttpServletRequest request, HttpServletResponse response) {
+    public void leaveList(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        ResponseUtils responseUtils;
 
+        String eid = request.getParameter("eid");
+        log.info(eid);
+        try {
+            List<Map<String, Object>> list = leaveFormService.selectList(STATE_PROCESS, Long.valueOf(eid));
+            responseUtils = new ResponseUtils().put("list", list);
+        } catch (Exception e) {
+            responseUtils = new ResponseUtils(e.getClass().getSimpleName(), e.getMessage());
+        }
+        response.getWriter().write(responseUtils.toJsonString());
     }
 
-    public void auditLeave(HttpServletRequest request, HttpServletResponse response) {
+    public void auditLeave(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        ResponseUtils responseUtils;
+        String operatorId = request.getParameter("eid");
+        String formId = request.getParameter("formId");
+        String result = request.getParameter("result");
+        String reason = request.getParameter("reason");
 
+        try {
+            leaveFormService.auditLeave(Long.parseLong(formId), Long.parseLong(operatorId), result, reason);
+            responseUtils = new ResponseUtils();
+        } catch (Exception e) {
+            responseUtils = new ResponseUtils(e.getClass().getSimpleName(), e.getMessage());
+        }
+        response.getWriter().write(responseUtils.toJsonString());
     }
 }
