@@ -3,8 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <!-- Import style -->
+    <link rel="stylesheet" href="//unpkg.com/element-plus/dist/index.css"/>
+    <!-- Import Vue 3 -->
+    <script src="//unpkg.com/vue@3"></script>
+    <!-- Import component library -->
+    <script src="//unpkg.com/element-plus"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 </head>
 <body>
-<h1>Notice</h1>
+<div id="app">
+    <h2>系统通知</h2>
+    <el-table ref="singleTable" :data="tableData" highlight-current-row style="width: 100%">
+        <el-table-column property="index" label="序号" width="100"></el-table-column>
+        <el-table-column property="ctime" label="通知时间" width="200"></el-table-column>
+        <el-table-column property="content" label="通知内容"></el-table-column>
+    </el-table>
+</div>
+
+<script>
+    const Main = {
+        data() {
+            return {
+                tableData: []
+            }
+        },
+        methods: {
+            formatDate(time) {
+                return `${time[0]}-${time[1]}-${time[2]} ${time[3]}:${time[4]}`
+            },
+        },
+        mounted() {
+            axios.get("/api/notice?eid=" + localStorage.getItem("eid")).then((res) => {
+                let data = res.data
+                this.tableData.splice(0, this.tableData.length)
+                data.data.list.forEach((item, index) => {
+                    item.ctime = this.formatDate(item.createTime)
+                    item.index = index + 1
+                    this.tableData.push(item)
+                })
+            })
+                .catch((err) => {
+                    console.log(err)
+                })
+        }
+    };
+    const app = Vue.createApp(Main);
+    app.use(ElementPlus)
+    app.mount("#app");
+</script>
 </body>
 </html>

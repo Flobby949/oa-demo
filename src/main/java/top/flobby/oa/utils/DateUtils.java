@@ -31,4 +31,12 @@ public class DateUtils {
         Duration duration = Duration.between(startTime, endTime);
         return duration.toHours() >= 72L;
     }
+
+    public static String dateFormat(LocalDateTime time) {
+        int year = time.getYear();
+        int month = time.getMonthValue();
+        int day = time.getDayOfMonth();
+        int hour = time.getHour();
+        return String.format("%04d-%02d-%02d-%02d 时", year, month, day, hour);
+    }
 }

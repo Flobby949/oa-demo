@@ -1,13 +1,18 @@
 package top.flobby.oa.service.impl;
 
 import top.flobby.oa.common.LevelEnum;
+import top.flobby.oa.entity.Department;
 import top.flobby.oa.entity.Employee;
 import top.flobby.oa.entity.LeaveForm;
 import top.flobby.oa.entity.ProcessFlow;
+import top.flobby.oa.mapper.DepartmentMapper;
 import top.flobby.oa.mapper.LeaveFormMapper;
+import top.flobby.oa.mapper.NoticeMapper;
 import top.flobby.oa.mapper.ProcessFlowMapper;
+import top.flobby.oa.service.DepartmentService;
 import top.flobby.oa.service.EmployeeService;
 import top.flobby.oa.service.LeaveFormService;
+import top.flobby.oa.service.NoticeService;
 import top.flobby.oa.service.exception.LeaveFormException;
 import top.flobby.oa.utils.DateUtils;
 import top.flobby.oa.utils.MybatisUtils;
@@ -29,6 +34,8 @@ import static top.flobby.oa.common.Constant.*;
 public class LeaveFormServiceImpl implements LeaveFormService {
 
     private final EmployeeService employeeService = new EmployeeServiceImpl();
+    private final NoticeService noticeService = new NoticeServiceImpl();
+    private final DepartmentService departmentService = new DepartmentServiceImpl();
 
 
     @Override
@@ -38,15 +45,33 @@ public class LeaveFormServiceImpl implements LeaveFormService {
             ProcessFlowMapper processFlowMapper = sqlSession.getMapper(ProcessFlowMapper.class);
             // 获取员工以及领导信息
             Employee employee = employeeService.getInfo(leaveForm.getEmployeeId());
+            Department employeeDepartment = departmentService.getDepartment(employee.getDepartmentId());
             if (LevelEnum.BOSS.getLevel().equals(employee.getLevel())) {
                 leaveForm.setState(RESULT_APPROVE);
             } else {
                 leaveForm.setState(RESULT_PROCESS);
             }
             Employee leader = employeeService.getLeader(employee.getEmployeeId());
+            Department learderDepartment = departmentService.getDepartment(leader.getDepartmentId());
             // 插入请假记录
             leaveForm.setCreateTime(LocalDateTime.now());
             leaveFormMapper.insertLeaveForm(leaveForm);
+            if (!LevelEnum.BOSS.getLevel().equals(employee.getLevel())) {
+                // 发送给领导
+                String notice1 = String.format("%s-%s提起请假申请[%s-%s]，请您审批",
+                        employeeDepartment.getDepartmentName(),
+                        employee.getName(),
+                        DateUtils.dateFormat(leaveForm.getStartTime()),
+                        DateUtils.dateFormat(leaveForm.getEndTime()));
+                noticeService.sendNotice(leader.getEmployeeId(), notice1);
+                // 发送给自己
+                String notice2 = String.format("您的请假申请[%s-%s]，已移交给%s-%s审批",
+                        DateUtils.dateFormat(leaveForm.getStartTime()),
+                        DateUtils.dateFormat(leaveForm.getEndTime()),
+                        learderDepartment.getDepartmentName(),
+                        leader.getName());
+                noticeService.sendNotice(employee.getEmployeeId(), notice2);
+            }
             // 判断请假时长是否超过72h
             boolean checkHours =
                     DateUtils.checkHours(leaveForm.getStartTime(), leaveForm.getEndTime());
@@ -146,9 +171,18 @@ public class LeaveFormServiceImpl implements LeaveFormService {
             if (flowList.isEmpty()) {
                 throw new LeaveFormException("无效流程");
             }
+            String noticeResult;
+            if (RESULT_APPROVE.equals(result)) {
+                noticeResult = "同意";
+            } else {
+                noticeResult = "拒绝";
+            }
+
+            Employee operator = employeeService.getInfo(operatorId);
 
             // 获取当前任务流程对象
-            List<ProcessFlow> processList = flowList.stream().filter(p -> Objects.equals(p.getOperatorId(), operatorId) && STATE_PROCESS.equals(p.getState())).toList();
+            List<ProcessFlow> processList = flowList.stream().filter(p
+                    -> Objects.equals(p.getOperatorId(), operatorId) && STATE_PROCESS.equals(p.getState())).toList();
 
             ProcessFlow processFlow;
 
@@ -167,17 +201,60 @@ public class LeaveFormServiceImpl implements LeaveFormService {
             LeaveFormMapper leaveFormMapper = sqlSession.getMapper(LeaveFormMapper.class);
             LeaveForm leaveForm = leaveFormMapper.selectById(formId);
 
+            Employee employee = employeeService.getInfo(leaveForm.getEmployeeId());
+            Department employeeDepartment = departmentService.getDepartment(employee.getDepartmentId());
+
             // 如果当前是最后一个流程，更新请假单状态
             if (processFlow.getIsLast() == 1) {
                 leaveForm.setState(result);
                 leaveFormMapper.updateLeaveForm(leaveForm);
+                // 给审批人发送通知
+                String notice1 = String.format("%s-%s提起请假申请[%s-%s]您以处理，审批意见：%s，审批流程已结束",
+                        employeeDepartment.getDepartmentName(),
+                        employee.getName(),
+                        DateUtils.dateFormat(leaveForm.getStartTime()),
+                        DateUtils.dateFormat(leaveForm.getEndTime()),
+                        noticeResult
+                );
+                noticeService.sendNotice(operatorId, notice1);
+                // 给发起人发送通知
+                String notice2 = String.format("您提起请假申请[%s-%s]审批完毕，审批意见：%s",
+                        DateUtils.dateFormat(leaveForm.getStartTime()),
+                        DateUtils.dateFormat(leaveForm.getEndTime()),
+                        noticeResult);
+                noticeService.sendNotice(employee.getEmployeeId(), notice2);
             } else {
                 // 后续任务节点
-                List<ProcessFlow> readyList = flowList.stream().filter(p -> STATE_READY.equals(p.getState())).toList();
+                List<ProcessFlow> readyList = flowList.stream().filter(p
+                        -> STATE_READY.equals(p.getState())).toList();
                 if (RESULT_APPROVE.equals(result)) {
                     ProcessFlow readyFlow = readyList.get(0);
                     readyFlow.setState(STATE_PROCESS);
                     processFlowMapper.update(readyFlow);
+                    // 发给当前操作人
+                    String notice3 = String.format("%s-%s提起请假申请[%s-%s]您以批准，审批意见：%s，申请转至上级领导继续审批",
+                            employeeDepartment.getDepartmentName(),
+                            employee.getName(),
+                            DateUtils.dateFormat(leaveForm.getStartTime()),
+                            DateUtils.dateFormat(leaveForm.getEndTime()),
+                            noticeResult);
+                    noticeService.sendNotice(operatorId, notice3);
+                    // 发给上级领导
+                    String notice4 = String.format("%s-%s提起请假申请[%s-%s]，请您审批",
+                            employeeDepartment.getDepartmentName(),
+                            employee.getName(),
+                            DateUtils.dateFormat(leaveForm.getStartTime()),
+                            DateUtils.dateFormat(leaveForm.getEndTime()));
+                    noticeService.sendNotice(readyFlow.getOperatorId(), notice4);
+                    // 发给请假人
+                    String notice5 = String.format("%s-%s提起请假申请[%s-%s]以由%s批准，审批意见：%s，申请转至上级领导继续审批",
+                            employeeDepartment.getDepartmentName(),
+                            employee.getName(),
+                            DateUtils.dateFormat(leaveForm.getStartTime()),
+                            DateUtils.dateFormat(leaveForm.getEndTime()),
+                            operator.getName(),
+                            noticeResult);
+                    noticeService.sendNotice(employee.getEmployeeId(), notice5);
                 } else if (RESULT_REFUSE.equals(result)) {
                     // 如果不是最后一个节点，且被驳回，后续流程全部取消
                     for (ProcessFlow flow : readyList) {
